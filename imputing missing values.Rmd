@@ -1,0 +1,44 @@
+---
+title: "imputing missing values"
+author: "me"
+date: "7/12/2020"
+output: html_document
+---
+first i am gonna count the total missing values
+```{r}
+activity<-read.csv("activity.csv")
+sum(is.na(activity))
+```
+
+creating the new dataset
+```{r}
+MeanStepsPerInterval <- tapply(activity$steps, activity$interval, mean, na.rm = TRUE)
+activity_NAs <- activity[is.na(activity$steps),]
+activity_non_NAs <- activity[!is.na(activity$steps),]
+activity_NAs$steps <- as.factor(activity_NAs$interval)
+levels(activity_NAs$steps) <- MeanStepsPerInterval
+levels(activity_NAs$steps) <- round(as.numeric(levels(activity_NAs$steps)))
+activity_NAs$steps <- as.integer(as.vector(activity_NAs$steps))
+imputed_activity <- rbind(activity_NAs, activity_non_NAs)
+```
+now the histogram
+```{r}
+par(mfrow = c(1,2))
+activity_steps_day <- aggregate(steps ~ date, data = activity, FUN = sum, na.rm = TRUE)
+hist(activity_steps_day$steps, xlab = "Steps per Day", main = "NAs REMOVED - Total steps/day", col = "green")
+imp_activity_steps_day <- aggregate(steps ~ date, data = imputed_activity, FUN = sum, na.rm = TRUE)
+hist(imp_activity_steps_day$steps, xlab = "Steps per Day", main = "NAs IMPUTED - Total steps/day", col = "red")
+```
+now we calculate the new mean and median and compare them to the old ones
+```{r}
+imp_mean_steps <- mean(imp_activity_steps_day$steps)
+imp_median_steps <- median(imp_activity_steps_day$steps)
+mean_steps <- mean(activity_steps_day$steps)
+median_steps <- median(activity_steps_day$steps)
+results_mean_median <- data.frame(c(mean_steps, median_steps), c(imp_mean_steps, imp_median_steps))
+colnames(results_mean_median) <- c("NA removed", "Imputed NA values")
+rownames(results_mean_median) <- c("mean", "median")
+library(xtable)
+xtab<-xtable(results_mean_median)
+print(xtab,type="html")
+```
