@@ -1,0 +1,20 @@
+---
+title: "average daily cativity"
+author: "me"
+date: "7/12/2020"
+output: html_document
+---
+first i calculate the mean of all days and then i make the plot
+```{r}
+activity<-read.csv("activity.csv")
+activity_steps_mean <- aggregate(steps ~ interval, data = activity, FUN = mean, na.rm = TRUE)
+plot(activity_steps_mean$interval, activity_steps_mean$steps, type = "l", col = "tan3", xlab = "Intervals", ylab = "Total steps per interval", main = "Number of steps per interval (averaged) (NA removed)")
+```
+then to find the maximum steps
+```{r}
+max_steps <-max(activity_steps_mean$steps)
+max_interval <- activity_steps_mean$interval[which(activity_steps_mean$steps == max_steps)]
+max_steps <- round(max_steps, digits = 2)
+print(max_steps)
+print(max_interval)
+```
