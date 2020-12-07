@@ -1,0 +1,23 @@
+---
+title: "mean total number of steps taken per day"
+author: "me"
+date: "7/12/2020"
+output: html_document
+---
+i have unziped the files,then read them and then took the number of steps taken per day
+```{r}
+activity<-read.csv("activity.csv")
+activity_steps_day <- aggregate(steps ~ date, data = activity, FUN = sum, na.rm = TRUE)
+print(activity_steps_day)
+``` 
+then i take the histogram
+```{r}
+hist(activity_steps_day$steps, xlab = "Steps per Day", main = "Total number of steps taken per day", col = "red")
+```
+then i calculate the mean and median
+```{r}
+mean_steps <- mean(activity_steps_day$steps)
+median_steps <- median(activity_steps_day$steps)
+print(mean_steps)
+print(median_steps)
+```
