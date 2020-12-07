@@ -1,25 +1,98 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "differences between weekends and weekdays"
+author: "me"
+date: "7/12/2020"
+output: html_document
 ---
+i have unziped the files,then read them and then took the number of steps taken per day
+```{r}
+activity<-read.csv("activity.csv")
+activity_steps_day <- aggregate(steps ~ date, data = activity, FUN = sum, na.rm = TRUE)
+print(activity_steps_day)
+``` 
+then i take the histogram
+```{r}
+hist(activity_steps_day$steps, xlab = "Steps per Day", main = "Total number of steps taken per day", col = "red")
+```
+then i calculate the mean and median
+```{r}
+mean_steps <- mean(activity_steps_day$steps)
+median_steps <- median(activity_steps_day$steps)
+print(mean_steps)
+print(median_steps)
+```
+first i calculate the mean of all days and then i make the plot
+```{r}
+activity<-read.csv("activity.csv")
+activity_steps_mean <- aggregate(steps ~ interval, data = activity, FUN = mean, na.rm = TRUE)
+plot(activity_steps_mean$interval, activity_steps_mean$steps, type = "l", col = "tan3", xlab = "Intervals", ylab = "Total steps per interval", main = "Number of steps per interval (averaged) (NA removed)")
+```
+then to find the maximum steps
+```{r}
+max_steps <-max(activity_steps_mean$steps)
+max_interval <- activity_steps_mean$interval[which(activity_steps_mean$steps == max_steps)]
+max_steps <- round(max_steps, digits = 2)
+print(max_steps)
+print(max_interval)
+```
+first i am gonna count the total missing values
+```{r}
+activity<-read.csv("activity.csv")
+sum(is.na(activity))
+```
 
+creating the new dataset
+```{r}
+MeanStepsPerInterval <- tapply(activity$steps, activity$interval, mean, na.rm = TRUE)
+activity_NAs <- activity[is.na(activity$steps),]
+activity_non_NAs <- activity[!is.na(activity$steps),]
+activity_NAs$steps <- as.factor(activity_NAs$interval)
+levels(activity_NAs$steps) <- MeanStepsPerInterval
+levels(activity_NAs$steps) <- round(as.numeric(levels(activity_NAs$steps)))
+activity_NAs$steps <- as.integer(as.vector(activity_NAs$steps))
+imputed_activity <- rbind(activity_NAs, activity_non_NAs)
+```
+now the histogram
+```{r}
+par(mfrow = c(1,2))
+activity_steps_day <- aggregate(steps ~ date, data = activity, FUN = sum, na.rm = TRUE)
+hist(activity_steps_day$steps, xlab = "Steps per Day", main = "NAs REMOVED - Total steps/day", col = "green")
+imp_activity_steps_day <- aggregate(steps ~ date, data = imputed_activity, FUN = sum, na.rm = TRUE)
+hist(imp_activity_steps_day$steps, xlab = "Steps per Day", main = "NAs IMPUTED - Total steps/day", col = "red")
+```
+now we calculate the new mean and median and compare them to the old ones
+```{r}
+imp_mean_steps <- mean(imp_activity_steps_day$steps)
+imp_median_steps <- median(imp_activity_steps_day$steps)
+mean_steps <- mean(activity_steps_day$steps)
+median_steps <- median(activity_steps_day$steps)
+results_mean_median <- data.frame(c(mean_steps, median_steps), c(imp_mean_steps, imp_median_steps))
+colnames(results_mean_median) <- c("NA removed", "Imputed NA values")
+rownames(results_mean_median) <- c("mean", "median")
+library(xtable)
+xtab<-xtable(results_mean_median)
+print(xtab,type="html")
+```
 
-## Loading and preprocessing the data
+```{r}
+activity<-read.csv("activity.csv")
+MeanStepsPerInterval <- tapply(activity$steps, activity$interval, mean, na.rm = TRUE)
 
+activity_NAs <- activity[is.na(activity$steps),]
+activity_non_NAs <- activity[!is.na(activity$steps),]
 
+activity_NAs$steps <- as.factor(activity_NAs$interval)
+levels(activity_NAs$steps) <- MeanStepsPerInterval
 
-## What is mean total number of steps taken per day?
+levels(activity_NAs$steps) <- round(as.numeric(levels(activity_NAs$steps)))
+activity_NAs$steps <- as.integer(as.vector(activity_NAs$steps))
 
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+imputed_activity <- rbind(activity_NAs, activity_non_NAs)
+imputed_activity$dayType <- ifelse(weekdays(as.Date(imputed_activity$date)) == "Samstag" | weekdays(as.Date(imputed_activity$date)) == "Sonntag", "weekend", "weekday")
+imputed_activity$dayType <- factor(imputed_activity$dayType)
+steps_interval_dayType <- aggregate(steps ~ interval + dayType, data = imputed_activity, FUN = mean)
+head(steps_interval_dayType)
+names(steps_interval_dayType) <- c("interval", "day_type", "mean_steps")
+library(ggplot2)
+plot <- ggplot(steps_interval_dayType, aes(interval, mean_steps))
+plot + geom_line(color = "red") + facet_grid(day_type~.) + labs(x = "Intervals", y = "Average Steps", title = "Activity Patterns")
