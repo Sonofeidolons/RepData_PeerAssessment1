@@ -1,0 +1,28 @@
+---
+title: "differences between weekends and weekdays"
+author: "me"
+date: "7/12/2020"
+output: html_document
+---
+```{r}
+activity<-read.csv("activity.csv")
+MeanStepsPerInterval <- tapply(activity$steps, activity$interval, mean, na.rm = TRUE)
+
+activity_NAs <- activity[is.na(activity$steps),]
+activity_non_NAs <- activity[!is.na(activity$steps),]
+
+activity_NAs$steps <- as.factor(activity_NAs$interval)
+levels(activity_NAs$steps) <- MeanStepsPerInterval
+
+levels(activity_NAs$steps) <- round(as.numeric(levels(activity_NAs$steps)))
+activity_NAs$steps <- as.integer(as.vector(activity_NAs$steps))
+
+imputed_activity <- rbind(activity_NAs, activity_non_NAs)
+imputed_activity$dayType <- ifelse(weekdays(as.Date(imputed_activity$date)) == "Samstag" | weekdays(as.Date(imputed_activity$date)) == "Sonntag", "weekend", "weekday")
+imputed_activity$dayType <- factor(imputed_activity$dayType)
+steps_interval_dayType <- aggregate(steps ~ interval + dayType, data = imputed_activity, FUN = mean)
+head(steps_interval_dayType)
+names(steps_interval_dayType) <- c("interval", "day_type", "mean_steps")
+library(ggplot2)
+plot <- ggplot(steps_interval_dayType, aes(interval, mean_steps))
+plot + geom_line(color = "red") + facet_grid(day_type~.) + labs(x = "Intervals", y = "Average Steps", title = "Activity Patterns")
